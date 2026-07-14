@@ -7,10 +7,13 @@ type Props = { items: HItem[]; speed?: number };
 
 export function HorizontalAutoScroll({ items, speed = 50 }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const offsetRef = useRef(0);
+  const [paused, setPaused] = useState(false);
+
+  const isInteractingRef = useRef(false);
+  const scrollPosRef = useRef(0);
   const rafRef = useRef<number | null>(null);
   const lastTRef = useRef<number | null>(null);
-  const [paused, setPaused] = useState(false);
+  const resumeTimerRef = useRef<number | null>(null);
 
   const list = [...items, ...items];
 
@@ -22,28 +25,58 @@ export function HorizontalAutoScroll({ items, speed = 50 }: Props) {
       if (lastTRef.current == null) lastTRef.current = t;
       const dt = (t - lastTRef.current) / 1000;
       lastTRef.current = t;
-      if (!paused) {
-        const half = track.scrollWidth / 2;
-        offsetRef.current += speed * dt;
-        if (offsetRef.current >= half) offsetRef.current -= half;
-        track.style.transform = `translateX(-${offsetRef.current}px)`;
+
+      if (track) {
+        if (!isInteractingRef.current && !paused) {
+          const half = track.scrollWidth / 2;
+          scrollPosRef.current += speed * dt;
+          if (scrollPosRef.current >= half) {
+            scrollPosRef.current -= half;
+          }
+          track.scrollLeft = scrollPosRef.current;
+        } else {
+          scrollPosRef.current = track.scrollLeft;
+        }
       }
       rafRef.current = requestAnimationFrame(step);
     };
     rafRef.current = requestAnimationFrame(step);
+
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       lastTRef.current = null;
+      if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
     };
   }, [paused, speed]);
+
+  const startInteraction = () => {
+    isInteractingRef.current = true;
+    if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
+  };
+
+  const endInteraction = () => {
+    if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
+    resumeTimerRef.current = window.setTimeout(() => {
+      isInteractingRef.current = false;
+    }, 1500);
+  };
 
   const nudge = (dir: number) => {
     const track = trackRef.current;
     if (!track) return;
     const half = track.scrollWidth / 2;
-    offsetRef.current = (offsetRef.current + dir * 320 + half) % half;
-    track.style.transform = `translateX(-${offsetRef.current}px)`;
-    setPaused(true);
+    // Temporarily pause auto scroll
+    startInteraction();
+    
+    // Nudge position
+    let target = track.scrollLeft + dir * 300;
+    if (target < 0) target += half;
+    if (target >= half) target -= half;
+    
+    track.scrollTo({ left: target, behavior: "smooth" });
+    scrollPosRef.current = target;
+    
+    endInteraction();
   };
 
   return (
@@ -59,8 +92,20 @@ export function HorizontalAutoScroll({ items, speed = 50 }: Props) {
       >
         <div
           ref={trackRef}
-          className="flex gap-5 will-change-transform"
-          style={{ width: "max-content" }}
+          onPointerDown={startInteraction}
+          onTouchStart={startInteraction}
+          onTouchEnd={endInteraction}
+          onTouchCancel={endInteraction}
+          onMouseDown={startInteraction}
+          onMouseUp={endInteraction}
+          onMouseLeave={endInteraction}
+          onScroll={() => {
+            if (trackRef.current && isInteractingRef.current) {
+              scrollPosRef.current = trackRef.current.scrollLeft;
+            }
+          }}
+          className="flex gap-5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden select-none active:cursor-grabbing cursor-grab touch-pan-x"
+          style={{ width: "100%" }}
         >
           {list.map((it, i) => (
             <article
@@ -73,6 +118,7 @@ export function HorizontalAutoScroll({ items, speed = 50 }: Props) {
                   alt={it.text}
                   loading="lazy"
                   className="h-full w-full object-cover"
+                  draggable={false}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-ink/40 to-transparent" />
               </div>

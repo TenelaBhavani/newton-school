@@ -23,16 +23,16 @@ export function Header() {
   return (
     <header
       className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
-        scrolled ? "py-2 sm:py-2" : "py-2 sm:py-2 lg:py-3"
+        scrolled ? "py-1.5 sm:py-2" : "py-1.5 sm:py-2 lg:py-2.5"
       }`}
     >
       <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-5">
-        <div className="flex min-h-14 items-center justify-between gap-2 rounded-2xl glass-card px-3 py-2 shadow-[0_10px_26px_-18px_rgba(15,15,25,0.28)] sm:gap-3 sm:px-4">
+        <div className="flex min-h-12 sm:min-h-14 items-center justify-between gap-2 rounded-2xl glass-card px-3 py-1 sm:py-2 shadow-[0_10px_26px_-18px_rgba(15,15,25,0.28)] sm:gap-3 sm:px-4">
           <Link to="/" className="group flex min-w-0 flex-1 items-center sm:flex-none">
             <img
               src={logoUrl}
               alt="Newton English Medium School logo"
-              className="h-10 w-auto max-w-[150px] shrink object-contain drop-shadow-sm transition-transform group-hover:scale-105 sm:h-12 sm:max-w-[180px] lg:h-14 lg:max-w-[220px]"
+              className="h-9 w-auto max-w-[140px] shrink object-contain drop-shadow-sm transition-transform group-hover:scale-105 sm:h-11 sm:max-w-[170px] lg:h-13 lg:max-w-[210px]"
             />
           </Link>
 
@@ -65,6 +65,7 @@ export function Header() {
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <Link
               to="/contact"
+              search={{ enroll: true }}
               className="hidden md:inline-flex h-10 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-elevated hover:brightness-110 transition"
             >
               <GraduationCap className="h-4 w-4" />
@@ -72,6 +73,7 @@ export function Header() {
             </Link>
             <Link
               to="/contact"
+              search={{ enroll: true }}
               className="inline-flex h-9 shrink-0 items-center gap-1 rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground shadow-sm md:hidden max-[360px]:h-9 max-[360px]:w-9 max-[360px]:justify-center max-[360px]:px-0"
               aria-label="Enroll"
             >

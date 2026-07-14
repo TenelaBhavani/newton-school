@@ -48,7 +48,7 @@ const timeline = [
 
 const values = ["Integrity", "Respect", "Excellence", "Innovation"];
 
-const keyFacets = [
+const keyFacts = [
   { text: "Priority to discipline and a pleasant atmosphere to learn.", img: classroom },
   { text: "Intimation to parents about absenteeism via phone call / SMS.", img: facParent },
   { text: "Monitoring of students through C.C. cameras.", img: facCctv },
@@ -253,10 +253,10 @@ function AboutPage() {
         </div>
       </section>
 
-      {/* Key Facets */}
+      {/* Key Facts */}
       <section className="container-page py-10 sm:py-16">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary sm:tracking-[0.25em]">
-          Our Key Facets
+          Our Key Facts
         </p>
         <h2 className="mt-3 max-w-3xl font-display text-3xl leading-tight text-ink sm:text-5xl">
           A culture of consistency, focus and care.
@@ -265,7 +265,7 @@ function AboutPage() {
           Tap the arrows to navigate · auto-scrolls when idle.
         </p>
         <div className="mt-10">
-          <HorizontalAutoScroll items={keyFacets} />
+          <HorizontalAutoScroll items={keyFacts} />
         </div>
       </section>
     </SiteShell>

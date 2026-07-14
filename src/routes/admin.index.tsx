@@ -37,9 +37,11 @@ import {
   importGallery,
   importEvents,
   importAchievements,
+  importAlumni,
   seedAbout,
 } from "@/lib/admin-seed";
-import type { EventDoc, AchievementDoc, AboutContent } from "@/lib/admin-content";
+import type { EventDoc, AchievementDoc, AlumniDoc, AboutContent } from "@/lib/admin-content";
+import { Users } from "lucide-react";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({
@@ -51,12 +53,13 @@ export const Route = createFileRoute("/admin/")({
   component: AdminPage,
 });
 
-type TabKey = "gallery" | "events" | "achievements" | "about";
+type TabKey = "gallery" | "events" | "achievements" | "alumni" | "about";
 
 const TABS: { key: TabKey; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { key: "gallery", label: "Gallery", icon: ImageIcon },
   { key: "events", label: "Events", icon: Calendar },
   { key: "achievements", label: "Achievements", icon: Trophy },
+  { key: "alumni", label: "Alumni", icon: Users },
   { key: "about", label: "About", icon: FileText },
 ];
 
@@ -130,6 +133,7 @@ function AdminPage() {
         {tab === "gallery" && <GalleryAdmin />}
         {tab === "events" && <EventsAdmin />}
         {tab === "achievements" && <AchievementsAdmin />}
+        {tab === "alumni" && <AlumniAdmin />}
         {tab === "about" && <AboutAdmin />}
       </section>
     </SiteShell>
@@ -715,5 +719,120 @@ function EmptyState({ icon: Icon, text }: { icon: React.ComponentType<{ classNam
       <Icon className="mx-auto h-10 w-10 mb-3 opacity-60" />
       {text}
     </div>
+  );
+}
+
+/* ---------------- ALUMNI ---------------- */
+function AlumniAdmin() {
+  const [items, setItems] = useState<AlumniDoc[]>([]);
+  const [name, setName] = useState("");
+  const [where, setWhere] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const q = query(collection(db, "alumni"), orderBy("createdAt", "desc"));
+    return onSnapshot(q, (snap) =>
+      setItems(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<AlumniDoc, "id">) }))),
+    );
+  }, []);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!name.trim()) return setError("Name is required.");
+    if (!where.trim()) return setError("Where/Company/College is required.");
+    if (!note.trim()) return setError("Job/Note is required.");
+    
+    setBusy(true);
+    try {
+      await addDoc(collection(db, "alumni"), {
+        name: name.trim(),
+        where: where.trim(),
+        note: note.trim(),
+        createdAt: serverTimestamp(),
+      });
+      setName("");
+      setWhere("");
+      setNote("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Delete this alumnus?")) return;
+    await deleteDoc(doc(db, "alumni", id));
+  }
+
+  return (
+    <>
+      <form onSubmit={handleSubmit} className="rounded-3xl border border-border bg-card p-6 sm:p-8 mt-6">
+        <h2 className="font-display text-2xl text-ink">Add a new alumnus</h2>
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <input
+            type="text"
+            placeholder="Alumnus Name (e.g. R. Pavani)"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="rounded-xl border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+          <input
+            type="text"
+            placeholder="Where they are (e.g. Google, Hyderabad)"
+            value={where}
+            onChange={(e) => setWhere(e.target.value)}
+            className="rounded-xl border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+          <input
+            type="text"
+            placeholder="Note/Job Title (e.g. Software Engineer)"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            className="rounded-xl border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+        {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
+        <div className="mt-5">
+          <button
+            type="submit"
+            disabled={busy}
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-elevated hover:brightness-110 disabled:opacity-60"
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            Add Alumnus
+          </button>
+        </div>
+      </form>
+
+      <div className="mt-10 mb-6 flex flex-wrap items-end justify-between gap-3">
+        <h2 className="font-display text-2xl text-ink">Alumni ({items.length})</h2>
+        <ImportButton importer={importAlumni} label="Import default alumni" />
+      </div>
+
+      {items.length === 0 ? (
+        <EmptyState icon={Users} text="No alumni in database yet — click import or add one above." />
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {items.map((it) => (
+            <div key={it.id} className="relative rounded-2xl border border-border bg-card p-5 shadow-sm">
+              <h3 className="font-display text-xl text-ink leading-tight">{it.name}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{it.note}</p>
+              <p className="mt-1 text-sm text-primary font-medium">{it.where}</p>
+              <button
+                onClick={() => handleDelete(it.id)}
+                className="absolute top-3 right-3 grid h-8 w-8 place-items-center rounded-full bg-destructive/10 text-destructive hover:bg-destructive hover:text-white transition"
+                aria-label="Delete"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
   );
 }

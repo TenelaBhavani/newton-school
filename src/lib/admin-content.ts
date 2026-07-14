@@ -29,6 +29,14 @@ export type AchievementDoc = {
   createdAt?: { seconds: number } | null;
 };
 
+export type AlumniDoc = {
+  id: string;
+  name: string;
+  where: string;
+  note: string;
+  createdAt?: { seconds: number } | null;
+};
+
 
 export type AboutContent = {
   mission?: string;

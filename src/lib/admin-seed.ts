@@ -61,6 +61,13 @@ async function seedCollection(name: string, rows: Record<string, unknown>[]) {
   return { added: rows.length, skipped: false };
 }
 
+export const seedAlumni = [
+  { name: "R. Pavani", where: "Google, Hyderabad", note: "Software Engineer" },
+  { name: "K. Srinivas", where: "Indian Navy", note: "Officer" },
+  { name: "M. Lakshmi", where: "Andhra Medical College", note: "MBBS" },
+  { name: "S. Karthik", where: "IIT Madras", note: "B.Tech CSE" },
+];
+
 export async function importGallery() {
   return seedCollection("gallery", seedGallery);
 }
@@ -69,6 +76,9 @@ export async function importEvents() {
 }
 export async function importAchievements() {
   return seedCollection("achievements", seedAchievements);
+}
+export async function importAlumni() {
+  return seedCollection("alumni", seedAlumni);
 }
 export async function importAbout() {
   const ref = doc(db, "content", "about");

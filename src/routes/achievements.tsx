@@ -11,7 +11,7 @@ import cul from "@/assets/cultural.jpg";
 import sp from "@/assets/sports.jpg";
 import lab from "@/assets/computer-lab.jpg";
 import indep from "@/assets/independence.jpg";
-import { useCollection, type AchievementDoc } from "@/lib/admin-content";
+import { useCollection, type AchievementDoc, type AlumniDoc } from "@/lib/admin-content";
 
 const yearImages: Record<string, string> = {
   "2024-25": heroImg,
@@ -65,7 +65,10 @@ const fallbackYearly: Record<string, { title: string; text: string; imageUrl?: s
 
 function AchievementsPage() {
   const { items } = useCollection<AchievementDoc>("achievements");
-    const yearly = useMemo(() => {
+  const { items: alumniItems } = useCollection<AlumniDoc>("alumni");
+  const displayAlumni = alumniItems.length > 0 ? alumniItems : alumni;
+
+  const yearly = useMemo(() => {
     // Start from built-in fallback so old achievements always stay.
     const out: Record<string, { title: string; text: string; imageUrl?: string }[]> = {};
     for (const y of Object.keys(fallbackYearly)) {
@@ -138,7 +141,7 @@ function AchievementsPage() {
         <div className="mt-10 relative overflow-hidden rounded-2xl sm:rounded-[2rem] bg-ink-gradient text-ivory p-5 sm:p-10 lg:p-14">
           <Trophy className="h-8 w-8 text-gold" />
           <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {alumni.map((a, i) => (
+            {displayAlumni.map((a, i) => (
               <motion.div
                 key={a.name}
                 initial={{ opacity: 0, y: 20 }}
@@ -191,7 +194,7 @@ function AchievementsPage() {
                 initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
-                className="relative h-[280px] overflow-hidden rounded-2xl shadow-elevated sm:h-[380px] sm:rounded-3xl lg:h-[520px]"
+                className="relative aspect-[16/10] sm:aspect-auto overflow-hidden rounded-2xl shadow-elevated sm:h-[380px] sm:rounded-3xl lg:h-[520px]"
               >
                 <img
                   src={bannerImg}

@@ -122,6 +122,7 @@ function HomePage() {
           >
             <Link
               to="/contact"
+              search={{ enroll: true }}
               className="group inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground shadow-elevated hover:brightness-110 transition"
             >
               <GraduationCap className="h-4 w-4" />
@@ -216,7 +217,7 @@ function HomePage() {
                 src={card.img}
                 alt={card.title}
                 loading="lazy"
-                className="h-[300px] sm:h-[420px] w-full object-cover transition duration-700 group-hover:scale-105"
+                className="aspect-[4/3] sm:aspect-auto sm:h-[420px] w-full object-cover transition duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/30 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 p-6 text-ivory">
@@ -265,7 +266,7 @@ function HomePage() {
               { v: 10000, s: "+", l: "Students Mentored" },
               { v: 20, s: "", l: "10ᵗʰ Class Batches" },
             ].map((s) => (
-              <div key={s.l}>
+              <div key={s.l} className="text-center">
                 <div className="font-display text-4xl sm:text-5xl lg:text-6xl text-gradient-gold">
                   <Counter to={s.v} suffix={s.s} />
                 </div>
@@ -333,6 +334,7 @@ function HomePage() {
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
               to="/contact"
+              search={{ enroll: true }}
               className="inline-flex items-center gap-2 rounded-full bg-ivory px-7 py-3.5 text-sm font-semibold text-primary shadow-elevated hover:scale-[1.02] transition"
             >
               <GraduationCap className="h-4 w-4" /> Enroll Now

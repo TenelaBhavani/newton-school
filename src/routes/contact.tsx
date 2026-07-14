@@ -11,6 +11,9 @@ import lab from "@/assets/computer-lab.jpg";
 import { SCHOOL } from "@/lib/school";
 
 export const Route = createFileRoute("/contact")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    enroll: Boolean(search.enroll),
+  }),
   head: () => ({
     meta: [
       { title: "Contact & Admissions | Newton English Medium School" },
@@ -29,7 +32,12 @@ export const Route = createFileRoute("/contact")({
   component: ContactPage,
 });
 
+import { useRef, useEffect } from "react";
+
 function ContactPage() {
+  const { enroll } = Route.useSearch();
+  const parentNameRef = useRef<HTMLInputElement>(null);
+
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -37,6 +45,19 @@ function ContactPage() {
     klass: "",
     message: "",
   });
+
+  useEffect(() => {
+    if (enroll) {
+      const timer = setTimeout(() => {
+        const formEl = document.getElementById("enquiry-form");
+        if (formEl) {
+          formEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+        parentNameRef.current?.focus();
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [enroll]);
 
   function submit(e: FormEvent) {
     e.preventDefault();
@@ -124,6 +145,7 @@ Thank you.`;
 
           {/* Form */}
           <motion.form
+            id="enquiry-form"
             onSubmit={submit}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -137,7 +159,7 @@ Thank you.`;
             </p>
 
             <div className="mt-6 sm:mt-8 grid gap-4 sm:gap-5 sm:grid-cols-2">
-              <Field label="Parent Name" required value={form.name} onChange={set("name")} />
+              <Field label="Parent Name" required value={form.name} onChange={set("name")} inputRef={parentNameRef} />
               <Field
                 label="Mobile Number"
                 required
@@ -199,8 +221,9 @@ Thank you.`;
 
 function Field({
   label,
+  inputRef,
   ...props
-}: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+}: { label: string; inputRef?: React.RefObject<HTMLInputElement | null> } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div>
       <label className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
@@ -209,6 +232,7 @@ function Field({
       </label>
       <input
         {...props}
+        ref={inputRef}
         className="mt-2 w-full rounded-xl border border-border bg-background px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
       />
     </div>
