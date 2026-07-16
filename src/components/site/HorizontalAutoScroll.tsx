@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
+import { useEffect, useRef, useCallback } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export type HItem = { text: string; img: string };
 
@@ -7,16 +7,24 @@ type Props = { items: HItem[]; speed?: number };
 
 export function HorizontalAutoScroll({ items, speed = 50 }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const [paused, setPaused] = useState(false);
 
-  const isInteractingRef = useRef(false);
-  const scrollPosRef = useRef(0);
+  // Animation state
   const rafRef = useRef<number | null>(null);
   const lastTRef = useRef<number | null>(null);
+  const scrollPosRef = useRef(0);
+
+  // Drag state
+  const isDraggingRef = useRef(false);
+  const dragStartXRef = useRef(0);
+  const dragScrollStartRef = useRef(0);
+
+  // Resume timer
   const resumeTimerRef = useRef<number | null>(null);
+  const isPausedRef = useRef(false);
 
   const list = [...items, ...items];
 
+  // ── Auto-scroll loop ──
   useEffect(() => {
     const track = trackRef.current;
     if (!track) return;
@@ -26,18 +34,15 @@ export function HorizontalAutoScroll({ items, speed = 50 }: Props) {
       const dt = (t - lastTRef.current) / 1000;
       lastTRef.current = t;
 
-      if (track) {
-        if (!isInteractingRef.current && !paused) {
-          const half = track.scrollWidth / 2;
-          scrollPosRef.current += speed * dt;
-          if (scrollPosRef.current >= half) {
-            scrollPosRef.current -= half;
-          }
-          track.scrollLeft = scrollPosRef.current;
-        } else {
-          scrollPosRef.current = track.scrollLeft;
+      if (!isPausedRef.current && !isDraggingRef.current) {
+        const half = track.scrollWidth / 2;
+        scrollPosRef.current += speed * dt;
+        if (scrollPosRef.current >= half) {
+          scrollPosRef.current -= half;
         }
+        track.scrollLeft = scrollPosRef.current;
       }
+
       rafRef.current = requestAnimationFrame(step);
     };
     rafRef.current = requestAnimationFrame(step);
@@ -47,37 +52,76 @@ export function HorizontalAutoScroll({ items, speed = 50 }: Props) {
       lastTRef.current = null;
       if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
     };
-  }, [paused, speed]);
+  }, [speed]);
 
-  const startInteraction = () => {
-    isInteractingRef.current = true;
-    if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
-  };
-
-  const endInteraction = () => {
+  // ── Schedule auto-scroll resume ──
+  const scheduleResume = useCallback(() => {
     if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
     resumeTimerRef.current = window.setTimeout(() => {
-      isInteractingRef.current = false;
+      isPausedRef.current = false;
+      if (trackRef.current) {
+        scrollPosRef.current = trackRef.current.scrollLeft;
+      }
     }, 1500);
-  };
+  }, []);
 
-  const nudge = (dir: number) => {
+  // ── Pointer handlers for drag ──
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    const track = trackRef.current;
+    if (!track) return;
+
+    isDraggingRef.current = true;
+    isPausedRef.current = true;
+    dragStartXRef.current = e.clientX;
+    dragScrollStartRef.current = track.scrollLeft;
+
+    if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
+
+    track.setPointerCapture(e.pointerId);
+  }, []);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isDraggingRef.current) return;
+    const track = trackRef.current;
+    if (!track) return;
+
+    const dx = e.clientX - dragStartXRef.current;
+    const newScroll = dragScrollStartRef.current - dx;
+    track.scrollLeft = newScroll;
+    scrollPosRef.current = newScroll;
+  }, []);
+
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+
+    const track = trackRef.current;
+    if (track) {
+      track.releasePointerCapture(e.pointerId);
+      scrollPosRef.current = track.scrollLeft;
+    }
+
+    scheduleResume();
+  }, [scheduleResume]);
+
+  // ── Arrow nudge ──
+  const nudge = useCallback((dir: number) => {
     const track = trackRef.current;
     if (!track) return;
     const half = track.scrollWidth / 2;
-    // Temporarily pause auto scroll
-    startInteraction();
-    
-    // Nudge position
+
+    isPausedRef.current = true;
+    if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
+
     let target = track.scrollLeft + dir * 300;
     if (target < 0) target += half;
     if (target >= half) target -= half;
-    
+
     track.scrollTo({ left: target, behavior: "smooth" });
     scrollPosRef.current = target;
-    
-    endInteraction();
-  };
+
+    scheduleResume();
+  }, [scheduleResume]);
 
   return (
     <div className="relative">
@@ -92,19 +136,11 @@ export function HorizontalAutoScroll({ items, speed = 50 }: Props) {
       >
         <div
           ref={trackRef}
-          onPointerDown={startInteraction}
-          onTouchStart={startInteraction}
-          onTouchEnd={endInteraction}
-          onTouchCancel={endInteraction}
-          onMouseDown={startInteraction}
-          onMouseUp={endInteraction}
-          onMouseLeave={endInteraction}
-          onScroll={() => {
-            if (trackRef.current && isInteractingRef.current) {
-              scrollPosRef.current = trackRef.current.scrollLeft;
-            }
-          }}
-          className="flex gap-5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden select-none active:cursor-grabbing cursor-grab touch-pan-x"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          className="flex gap-5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden select-none cursor-grab active:cursor-grabbing touch-none"
           style={{ width: "100%" }}
         >
           {list.map((it, i) => (
@@ -139,14 +175,9 @@ export function HorizontalAutoScroll({ items, speed = 50 }: Props) {
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
-        <button
-          type="button"
-          onClick={() => setPaused((p) => !p)}
-          className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 h-10 text-xs font-medium hover:bg-accent transition"
-        >
-          {paused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
-          {paused ? "Resume" : "Pause"}
-        </button>
+        <p className="text-xs text-muted-foreground">
+          Drag to explore · auto-scrolls when idle
+        </p>
         <button
           type="button"
           onClick={() => nudge(1)}

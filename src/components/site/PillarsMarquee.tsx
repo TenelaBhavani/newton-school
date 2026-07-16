@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useCallback, useEffect } from "react";
 import type { LucideIcon } from "lucide-react";
 
 export type Pillar = {
@@ -12,71 +12,105 @@ type Props = { pillars: Pillar[] };
 
 export function PillarsMarquee({ pillars }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const [paused, setPaused] = useState(false);
-  const [activeKey, setActiveKey] = useState<string | null>(null);
 
-  const isInteractingRef = useRef(false);
-  const scrollPosRef = useRef(0);
+  // Refs for the animation loop & interaction state
   const rafRef = useRef<number | null>(null);
-  const lastTimeRef = useRef<number | null>(null);
+  const lastTRef = useRef<number | null>(null);
+  const scrollPosRef = useRef(0);
+
+  // Drag state
+  const isDraggingRef = useRef(false);
+  const dragStartXRef = useRef(0);
+  const dragScrollStartRef = useRef(0);
+
+  // Resume timer
   const resumeTimerRef = useRef<number | null>(null);
+  const isPausedRef = useRef(false);
 
   const items = [...pillars, ...pillars];
   const speed = 40; // px/sec
 
+  // ── Auto-scroll loop ──
   useEffect(() => {
     const track = trackRef.current;
     if (!track) return;
 
     const step = (t: number) => {
-      if (lastTimeRef.current == null) lastTimeRef.current = t;
-      const dt = (t - lastTimeRef.current) / 1000;
-      lastTimeRef.current = t;
+      if (lastTRef.current == null) lastTRef.current = t;
+      const dt = (t - lastTRef.current) / 1000;
+      lastTRef.current = t;
 
-      if (track) {
-        if (!isInteractingRef.current && !paused) {
-          const half = track.scrollWidth / 2;
-          scrollPosRef.current += speed * dt;
-          if (scrollPosRef.current >= half) {
-            scrollPosRef.current -= half;
-          }
-          track.scrollLeft = scrollPosRef.current;
-        } else {
-          scrollPosRef.current = track.scrollLeft;
+      if (!isPausedRef.current && !isDraggingRef.current) {
+        const half = track.scrollWidth / 2;
+        scrollPosRef.current += speed * dt;
+        if (scrollPosRef.current >= half) {
+          scrollPosRef.current -= half;
         }
+        track.scrollLeft = scrollPosRef.current;
       }
+
       rafRef.current = requestAnimationFrame(step);
     };
     rafRef.current = requestAnimationFrame(step);
 
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      lastTimeRef.current = null;
+      lastTRef.current = null;
       if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
     };
-  }, [paused]);
+  }, []);
 
-  const startInteraction = () => {
-    isInteractingRef.current = true;
-    if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
-  };
-
-  const endInteraction = () => {
+  // ── Schedules auto-scroll resume after delay ──
+  const scheduleResume = useCallback(() => {
     if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
     resumeTimerRef.current = window.setTimeout(() => {
-      isInteractingRef.current = false;
+      isPausedRef.current = false;
+      // Sync position so it doesn't jump
+      if (trackRef.current) {
+        scrollPosRef.current = trackRef.current.scrollLeft;
+      }
     }, 1500);
-  };
+  }, []);
 
-  const handleTap = (key: string) => {
-    if (activeKey === key) {
-      setActiveKey(null);
-      setPaused(false);
-    } else {
-      setActiveKey(key);
-      setPaused(true);
+  // ── Pointer / Touch handlers for drag ──
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    const track = trackRef.current;
+    if (!track) return;
+
+    isDraggingRef.current = true;
+    isPausedRef.current = true;
+    dragStartXRef.current = e.clientX;
+    dragScrollStartRef.current = track.scrollLeft;
+
+    if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
+
+    // Capture pointer so moves outside the element still fire
+    track.setPointerCapture(e.pointerId);
+  }, []);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isDraggingRef.current) return;
+    const track = trackRef.current;
+    if (!track) return;
+
+    const dx = e.clientX - dragStartXRef.current;
+    const newScroll = dragScrollStartRef.current - dx;
+    track.scrollLeft = newScroll;
+    scrollPosRef.current = newScroll;
+  }, []);
+
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+
+    const track = trackRef.current;
+    if (track) {
+      track.releasePointerCapture(e.pointerId);
+      scrollPosRef.current = track.scrollLeft;
     }
-  };
+
+    scheduleResume();
+  }, [scheduleResume]);
 
   return (
     <div
@@ -90,35 +124,19 @@ export function PillarsMarquee({ pillars }: Props) {
     >
       <div
         ref={trackRef}
-        onPointerDown={startInteraction}
-        onTouchStart={startInteraction}
-        onTouchEnd={endInteraction}
-        onTouchCancel={endInteraction}
-        onMouseDown={startInteraction}
-        onMouseUp={endInteraction}
-        onMouseLeave={endInteraction}
-        onScroll={() => {
-          if (trackRef.current && isInteractingRef.current) {
-            scrollPosRef.current = trackRef.current.scrollLeft;
-          }
-        }}
-        className="flex gap-6 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden select-none active:cursor-grabbing cursor-grab touch-pan-x"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        className="flex gap-6 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden select-none cursor-grab active:cursor-grabbing touch-none"
         style={{ width: "100%" }}
       >
         {items.map((p, i) => {
           const key = `${p.title}-${i}`;
-          const isActive = activeKey === key;
           return (
-            <button
+            <div
               key={key}
-              type="button"
-              onPointerDown={() => handleTap(key)}
-              onClick={() => handleTap(key)}
-              className={`group relative w-[280px] sm:w-[320px] md:w-[360px] shrink-0 overflow-hidden rounded-3xl border bg-card text-left transition touch-pan-y ${
-                isActive
-                  ? "border-primary shadow-elevated -translate-y-1"
-                  : "border-border hover:-translate-y-1 hover:shadow-elevated"
-              }`}
+              className="group relative w-[280px] sm:w-[320px] md:w-[360px] shrink-0 overflow-hidden rounded-3xl border border-border bg-card text-left transition hover:-translate-y-1 hover:shadow-elevated"
             >
               <div className="relative aspect-[4/3] overflow-hidden">
                 <img
@@ -139,12 +157,12 @@ export function PillarsMarquee({ pillars }: Props) {
                   {p.text}
                 </p>
               </div>
-            </button>
+            </div>
           );
         })}
       </div>
       <p className="mt-4 text-center text-xs text-muted-foreground">
-        {paused ? "Paused — tap again to resume" : "Tap a card to pause or drag to explore"}
+        Drag to explore · auto-scrolls when idle
       </p>
     </div>
   );

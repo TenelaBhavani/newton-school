@@ -98,7 +98,7 @@ Thank you.`;
         </div>
       </HeroBackground>
 
-      <section className="container-page py-12 sm:py-16">
+      <section className="container-page overflow-hidden py-12 sm:py-16">
         <div className="grid gap-6 lg:gap-8 lg:grid-cols-[1fr_1.2fr]">
           {/* Info */}
           <div className="space-y-4 sm:space-y-6">
@@ -112,21 +112,21 @@ Thank you.`;
                 initial={{ opacity: 0, y: 14 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="rounded-2xl sm:rounded-3xl border border-border bg-card p-4 sm:p-6 flex gap-3 sm:gap-4"
+                className="rounded-2xl sm:rounded-3xl border border-border bg-card p-4 sm:p-6 flex gap-3 sm:gap-4 overflow-hidden"
               >
                 <div className="grid h-12 w-12 place-items-center rounded-2xl bg-primary/10 text-primary shrink-0">
                   <Icon className="h-5 w-5" />
                 </div>
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
                     {label}
                   </p>
                   {href ? (
-                    <a href={href} className="mt-1 block text-foreground hover:text-primary">
+                    <a href={href} className="mt-1 block text-foreground hover:text-primary break-all text-sm sm:text-base">
                       {value}
                     </a>
                   ) : (
-                    <p className="mt-1 text-foreground">{value}</p>
+                    <p className="mt-1 text-foreground text-sm sm:text-base">{value}</p>
                   )}
                 </div>
               </motion.div>
