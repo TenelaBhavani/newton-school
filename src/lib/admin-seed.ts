@@ -68,6 +68,51 @@ export const seedAlumni = [
   { name: "S. Karthik", where: "IIT Madras", note: "B.Tech CSE" },
 ];
 
+export const seedFaculty = [
+  {
+    name: "Mr. K. Srinivasa Rao",
+    role: "Senior Mathematics Faculty",
+    qualification: "M.Sc., B.Ed",
+    dept: "Mathematics",
+    initials: "KS",
+  },
+  {
+    name: "Mrs. P. Anuradha",
+    role: "English Language Coordinator",
+    qualification: "M.A., B.Ed",
+    dept: "English",
+    initials: "PA",
+  },
+  {
+    name: "Mr. S. K. Murthy",
+    role: "Social Studies Department Head",
+    qualification: "M.A., B.Ed",
+    dept: "Social Sciences",
+    initials: "SM",
+  },
+  {
+    name: "Mrs. G. Lakshmi",
+    role: "Senior Telugu & Hindi Mentor",
+    qualification: "M.A., Sahitya Ratna",
+    dept: "Languages",
+    initials: "GL",
+  },
+  {
+    name: "Mrs. K. Madhavi",
+    role: "Physical & Natural Sciences Faculty",
+    qualification: "M.Sc., B.Ed",
+    dept: "Sciences",
+    initials: "KM",
+  },
+  {
+    name: "Mr. V. Raju",
+    role: "Physical Education Director",
+    qualification: "B.P.Ed",
+    dept: "Physical Education",
+    initials: "VR",
+  },
+];
+
 export async function importGallery() {
   return seedCollection("gallery", seedGallery);
 }
@@ -79,6 +124,9 @@ export async function importAchievements() {
 }
 export async function importAlumni() {
   return seedCollection("alumni", seedAlumni);
+}
+export async function importFaculty() {
+  return seedCollection("faculty", seedFaculty);
 }
 export async function importAbout() {
   const ref = doc(db, "content", "about");

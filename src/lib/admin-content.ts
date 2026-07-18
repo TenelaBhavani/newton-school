@@ -37,6 +37,16 @@ export type AlumniDoc = {
   createdAt?: { seconds: number } | null;
 };
 
+export type FacultyDoc = {
+  id: string;
+  name: string;
+  role: string;
+  qualification: string;
+  dept: string;
+  initials: string;
+  createdAt?: { seconds: number } | null;
+};
+
 
 export type AboutContent = {
   mission?: string;

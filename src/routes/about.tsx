@@ -16,7 +16,7 @@ import facSmart from "@/assets/facility-smart.jpg";
 import pillarTime from "@/assets/pillar-time.jpg";
 import pillarCreative from "@/assets/pillar-creative.jpg";
 import pillarGoal from "@/assets/pillar-goal.jpg";
-import { useAboutContent } from "@/lib/admin-content";
+import { useAboutContent, useCollection, type FacultyDoc } from "@/lib/admin-content";
 
 export const Route = createFileRoute("/about")({
   head: () => ({
@@ -68,6 +68,7 @@ const keyFacts = [
 
 function AboutPage() {
   const content = useAboutContent();
+  const { items: dbFaculty } = useCollection<FacultyDoc>("faculty");
   const mission = content?.mission?.trim() || "To prepare every student to face global educational challenges with confidence — through engaging academics, modern resources and a culture rooted in care.";
   const vision = content?.vision?.trim() || "An education that goes beyond grades — building responsible citizens who think clearly, act kindly and lead with integrity.";
   const principalQuote = content?.principalQuote?.trim() || "Welcome to Newton's EM School — where we not only educate minds but nurture hearts. Students are instilled with core values like honesty, kindness, generosity, courage, freedom and respect.";
@@ -250,6 +251,98 @@ function AboutPage() {
               {principalBio}
             </p>
           </motion.div>
+        </div>
+      </section>
+
+      {/* Faculty */}
+      <section className="container-page py-10 sm:py-16">
+        <div className="max-w-2xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary sm:tracking-[0.25em]">
+            Our Educators
+          </p>
+          <h2 className="mt-3 font-display text-3xl leading-tight text-ink sm:text-5xl">
+            Meet our dedicated mentors.
+          </h2>
+          <p className="mt-3 text-sm text-muted-foreground max-w-xl">
+            A team of qualified, caring, and experienced teachers shaping curious minds and guiding every student to reach their potential.
+          </p>
+        </div>
+
+        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {(dbFaculty.length > 0
+            ? dbFaculty
+            : [
+                {
+                  name: "Mr. K. Srinivasa Rao",
+                  role: "Senior Mathematics Faculty",
+                  qualification: "M.Sc., B.Ed",
+                  dept: "Mathematics",
+                  initials: "KS",
+                },
+                {
+                  name: "Mrs. P. Anuradha",
+                  role: "English Language Coordinator",
+                  qualification: "M.A., B.Ed",
+                  dept: "English",
+                  initials: "PA",
+                },
+                {
+                  name: "Mr. S. K. Murthy",
+                  role: "Social Studies Department Head",
+                  qualification: "M.A., B.Ed",
+                  dept: "Social Sciences",
+                  initials: "SM",
+                },
+                {
+                  name: "Mrs. G. Lakshmi",
+                  role: "Senior Telugu & Hindi Mentor",
+                  qualification: "M.A., Sahitya Ratna",
+                  dept: "Languages",
+                  initials: "GL",
+                },
+                {
+                  name: "Mrs. K. Madhavi",
+                  role: "Physical & Natural Sciences Faculty",
+                  qualification: "M.Sc., B.Ed",
+                  dept: "Sciences",
+                  initials: "KM",
+                },
+                {
+                  name: "Mr. V. Raju",
+                  role: "Physical Education Director",
+                  qualification: "B.P.Ed",
+                  dept: "Physical Education",
+                  initials: "VR",
+                },
+              ]
+          ).map((f, i) => (
+            <motion.div
+              key={f.name}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: i * 0.05 }}
+              className="group relative overflow-hidden rounded-3xl border border-border bg-card p-6 shadow-sm hover:shadow-elevated hover:-translate-y-1 transition duration-300"
+            >
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-gold/10 text-xl font-bold font-display text-primary select-none group-hover:scale-105 transition-transform">
+                  {f.initials}
+                </div>
+                <div>
+                  <span className="inline-block rounded-full bg-primary/10 px-2.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-primary">
+                    {f.dept}
+                  </span>
+                  <h3 className="mt-1 font-display text-lg text-ink font-semibold">
+                    {f.name}
+                  </h3>
+                </div>
+              </div>
+              <div className="mt-5 border-t border-border/60 pt-4">
+                <p className="text-sm font-medium text-foreground/80">{f.role}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{f.qualification}</p>
+              </div>
+            </motion.div>
+          ))}
         </div>
       </section>
 

@@ -28,6 +28,7 @@ import {
   Save,
   Pencil,
   DownloadCloud,
+  GraduationCap,
 } from "lucide-react";
 import { SiteShell } from "@/components/site/SiteShell";
 import { auth, db } from "@/lib/firebase";
@@ -38,9 +39,10 @@ import {
   importEvents,
   importAchievements,
   importAlumni,
+  importFaculty,
   seedAbout,
 } from "@/lib/admin-seed";
-import type { EventDoc, AchievementDoc, AlumniDoc, AboutContent } from "@/lib/admin-content";
+import type { EventDoc, AchievementDoc, AlumniDoc, FacultyDoc, AboutContent } from "@/lib/admin-content";
 import { Users } from "lucide-react";
 
 export const Route = createFileRoute("/admin/")({
@@ -53,13 +55,14 @@ export const Route = createFileRoute("/admin/")({
   component: AdminPage,
 });
 
-type TabKey = "gallery" | "events" | "achievements" | "alumni" | "about";
+type TabKey = "gallery" | "events" | "achievements" | "alumni" | "faculty" | "about";
 
 const TABS: { key: TabKey; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { key: "gallery", label: "Gallery", icon: ImageIcon },
   { key: "events", label: "Events", icon: Calendar },
   { key: "achievements", label: "Achievements", icon: Trophy },
   { key: "alumni", label: "Alumni", icon: Users },
+  { key: "faculty", label: "Faculty", icon: GraduationCap },
   { key: "about", label: "About", icon: FileText },
 ];
 
@@ -134,6 +137,7 @@ function AdminPage() {
         {tab === "events" && <EventsAdmin />}
         {tab === "achievements" && <AchievementsAdmin />}
         {tab === "alumni" && <AlumniAdmin />}
+        {tab === "faculty" && <FacultyAdmin />}
         {tab === "about" && <AboutAdmin />}
       </section>
     </SiteShell>
@@ -836,3 +840,163 @@ function AlumniAdmin() {
     </>
   );
 }
+
+/* ---------------- FACULTY ---------------- */
+function FacultyAdmin() {
+  const [items, setItems] = useState<FacultyDoc[]>([]);
+  const [name, setName] = useState("");
+  const [role, setRole] = useState("");
+  const [qualification, setQualification] = useState("");
+  const [dept, setDept] = useState("");
+  const [initials, setInitials] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const q = query(collection(db, "faculty"), orderBy("createdAt", "desc"));
+    return onSnapshot(q, (snap) =>
+      setItems(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<FacultyDoc, "id">) }))),
+    );
+  }, []);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!name.trim()) return setError("Name is required.");
+    if (!role.trim()) return setError("Role is required.");
+    if (!qualification.trim()) return setError("Qualification is required.");
+    if (!dept.trim()) return setError("Department is required.");
+
+    // Generate initials if empty
+    let finalInitials = initials.trim();
+    if (!finalInitials) {
+      const cleanName = name.replace(/^(Mr\.|Mrs\.|Ms\.|Dr\.)\s+/i, "");
+      const parts = cleanName.split(/\s+/).filter(Boolean);
+      if (parts.length >= 2) {
+        finalInitials = (parts[0][0] + parts[1][0]).toUpperCase();
+      } else if (parts.length === 1) {
+        finalInitials = parts[0].substring(0, 2).toUpperCase();
+      } else {
+        finalInitials = "ED";
+      }
+    }
+
+    setBusy(true);
+    try {
+      await addDoc(collection(db, "faculty"), {
+        name: name.trim(),
+        role: role.trim(),
+        qualification: qualification.trim(),
+        dept: dept.trim(),
+        initials: finalInitials.substring(0, 2),
+        createdAt: serverTimestamp(),
+      });
+      setName("");
+      setRole("");
+      setQualification("");
+      setDept("");
+      setInitials("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Delete this educator?")) return;
+    await deleteDoc(doc(db, "faculty", id));
+  }
+
+  return (
+    <>
+      <form onSubmit={handleSubmit} className="rounded-3xl border border-border bg-card p-6 sm:p-8 mt-6">
+        <h2 className="font-display text-2xl text-ink">Add a new educator</h2>
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <input
+            type="text"
+            placeholder="Educator Name (e.g. Mrs. P. Anuradha)"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="rounded-xl border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+          <input
+            type="text"
+            placeholder="Department (e.g. English, Mathematics)"
+            value={dept}
+            onChange={(e) => setDept(e.target.value)}
+            className="rounded-xl border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+          <input
+            type="text"
+            placeholder="Role/Job Title (e.g. Senior Faculty)"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            className="rounded-xl border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+          <input
+            type="text"
+            placeholder="Qualifications (e.g. M.A., B.Ed)"
+            value={qualification}
+            onChange={(e) => setQualification(e.target.value)}
+            className="rounded-xl border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+          <input
+            type="text"
+            placeholder="Initials (e.g. PA) - Optional"
+            value={initials}
+            maxLength={2}
+            onChange={(e) => setInitials(e.target.value)}
+            className="rounded-xl border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+        {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
+        <div className="mt-5">
+          <button
+            type="submit"
+            disabled={busy}
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-elevated hover:brightness-110 disabled:opacity-60"
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            Add Educator
+          </button>
+        </div>
+      </form>
+
+      <div className="mt-10 mb-6 flex flex-wrap items-end justify-between gap-3">
+        <h2 className="font-display text-2xl text-ink">Educators ({items.length})</h2>
+        <ImportButton importer={importFaculty} label="Import default educators" />
+      </div>
+
+      {items.length === 0 ? (
+        <EmptyState icon={GraduationCap} text="No educators in database yet — click import or add one above." />
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {items.map((it) => (
+            <div key={it.id} className="relative rounded-2xl border border-border bg-card p-5 shadow-sm flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-lg font-bold font-display text-primary">
+                {it.initials}
+              </div>
+              <div className="min-w-0 flex-1">
+                <span className="inline-block rounded-full bg-primary/10 px-2 py-0.5 text-[8px] font-semibold uppercase tracking-widest text-primary">
+                  {it.dept}
+                </span>
+                <h3 className="font-display text-lg text-ink leading-tight font-semibold mt-1 truncate">{it.name}</h3>
+                <p className="mt-1 text-xs text-foreground/80 font-medium truncate">{it.role}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{it.qualification}</p>
+              </div>
+              <button
+                onClick={() => handleDelete(it.id)}
+                className="absolute top-3 right-3 grid h-8 w-8 place-items-center rounded-full bg-destructive/10 text-destructive hover:bg-destructive hover:text-white transition"
+                aria-label="Delete"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
