@@ -36,8 +36,8 @@ export function Header() {
       </AnimatePresence>
 
       <header
-        className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
-          scrolled ? "py-px" : "py-0.5 sm:py-1"
+        className={`fixed inset-x-0 z-50 transition-all duration-300 ${
+          scrolled ? "top-1.5 sm:top-2" : "top-3 sm:top-4 lg:top-5"
         }`}
       >
         <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-5">
