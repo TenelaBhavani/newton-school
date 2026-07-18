@@ -181,7 +181,7 @@ export function PillarsMarquee({ pillars }: Props) {
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
         onScroll={handleScroll}
-        className="flex gap-6 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden select-none cursor-grab active:cursor-grabbing touch-pan-y"
+        className="flex gap-6 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden select-none cursor-grab active:cursor-grabbing"
         style={{ width: "100%" }}
       >
         {items.map((p, i) => {

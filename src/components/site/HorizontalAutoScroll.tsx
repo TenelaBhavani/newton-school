@@ -193,7 +193,7 @@ export function HorizontalAutoScroll({ items, speed = 50 }: Props) {
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
           onScroll={handleScroll}
-          className="flex gap-5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden select-none cursor-grab active:cursor-grabbing touch-pan-y"
+          className="flex gap-5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden select-none cursor-grab active:cursor-grabbing"
           style={{ width: "100%" }}
         >
           {list.map((it, i) => (
