@@ -18,13 +18,21 @@ export function HorizontalAutoScroll({ items, speed = 50 }: Props) {
   const dragStartXRef = useRef(0);
   const dragScrollStartRef = useRef(0);
 
+  // Velocity / momentum
+  const velocityRef = useRef(0);
+  const lastDragXRef = useRef(0);
+  const lastDragTRef = useRef(0);
+
   // Resume timer
   const resumeTimerRef = useRef<number | null>(null);
   const isPausedRef = useRef(false);
 
   const list = [...items, ...items];
 
-  // ── Auto-scroll loop ──
+  const friction = 0.95;
+  const minVelocity = 0.3;
+
+  // ── Main animation loop ──
   useEffect(() => {
     const track = trackRef.current;
     if (!track) return;
@@ -34,12 +42,22 @@ export function HorizontalAutoScroll({ items, speed = 50 }: Props) {
       const dt = (t - lastTRef.current) / 1000;
       lastTRef.current = t;
 
-      if (!isPausedRef.current && !isDraggingRef.current) {
-        const half = track.scrollWidth / 2;
+      const half = track.scrollWidth / 2;
+
+      if (isDraggingRef.current) {
+        scrollPosRef.current = track.scrollLeft;
+      } else if (Math.abs(velocityRef.current) > minVelocity) {
+        // Momentum phase
+        velocityRef.current *= friction;
+        scrollPosRef.current += velocityRef.current;
+        if (scrollPosRef.current >= half) scrollPosRef.current -= half;
+        if (scrollPosRef.current < 0) scrollPosRef.current += half;
+        track.scrollLeft = scrollPosRef.current;
+      } else if (!isPausedRef.current) {
+        // Auto-scroll
+        velocityRef.current = 0;
         scrollPosRef.current += speed * dt;
-        if (scrollPosRef.current >= half) {
-          scrollPosRef.current -= half;
-        }
+        if (scrollPosRef.current >= half) scrollPosRef.current -= half;
         track.scrollLeft = scrollPosRef.current;
       }
 
@@ -62,21 +80,23 @@ export function HorizontalAutoScroll({ items, speed = 50 }: Props) {
       if (trackRef.current) {
         scrollPosRef.current = trackRef.current.scrollLeft;
       }
-    }, 1500);
+    }, 2000);
   }, []);
 
-  // ── Pointer handlers for drag ──
+  // ── Pointer handlers ──
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     const track = trackRef.current;
     if (!track) return;
 
     isDraggingRef.current = true;
     isPausedRef.current = true;
+    velocityRef.current = 0;
     dragStartXRef.current = e.clientX;
     dragScrollStartRef.current = track.scrollLeft;
+    lastDragXRef.current = e.clientX;
+    lastDragTRef.current = performance.now();
 
     if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
-
     track.setPointerCapture(e.pointerId);
   }, []);
 
@@ -85,10 +105,20 @@ export function HorizontalAutoScroll({ items, speed = 50 }: Props) {
     const track = trackRef.current;
     if (!track) return;
 
+    const now = performance.now();
+    const dtMs = now - lastDragTRef.current;
+
     const dx = e.clientX - dragStartXRef.current;
     const newScroll = dragScrollStartRef.current - dx;
     track.scrollLeft = newScroll;
     scrollPosRef.current = newScroll;
+
+    if (dtMs > 0) {
+      const moveDelta = lastDragXRef.current - e.clientX;
+      velocityRef.current = (moveDelta / dtMs) * 16;
+    }
+    lastDragXRef.current = e.clientX;
+    lastDragTRef.current = now;
   }, []);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
@@ -101,6 +131,9 @@ export function HorizontalAutoScroll({ items, speed = 50 }: Props) {
       scrollPosRef.current = track.scrollLeft;
     }
 
+    const maxVel = 30;
+    velocityRef.current = Math.max(-maxVel, Math.min(maxVel, velocityRef.current));
+
     scheduleResume();
   }, [scheduleResume]);
 
@@ -111,6 +144,7 @@ export function HorizontalAutoScroll({ items, speed = 50 }: Props) {
     const half = track.scrollWidth / 2;
 
     isPausedRef.current = true;
+    velocityRef.current = 0;
     if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
 
     let target = track.scrollLeft + dir * 300;
@@ -176,7 +210,7 @@ export function HorizontalAutoScroll({ items, speed = 50 }: Props) {
           <ChevronLeft className="h-4 w-4" />
         </button>
         <p className="text-xs text-muted-foreground">
-          Drag to explore · auto-scrolls when idle
+          Swipe to explore · auto-scrolls when idle
         </p>
         <button
           type="button"

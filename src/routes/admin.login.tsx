@@ -56,6 +56,13 @@ function AdminLogin() {
       <section className="container-page min-h-[80vh] grid place-items-center py-16">
         <div className="w-full max-w-md">
           <div className="rounded-3xl border border-border bg-card p-8 sm:p-10 shadow-elevated">
+            <div className="flex flex-col items-center mb-6">
+              <img
+                src="/newton-logo.png"
+                alt="Newton English Medium School"
+                className="h-16 w-auto object-contain"
+              />
+            </div>
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
               <ShieldCheck className="h-3.5 w-3.5" /> Admin only
             </div>

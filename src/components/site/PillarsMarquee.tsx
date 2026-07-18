@@ -13,7 +13,7 @@ type Props = { pillars: Pillar[] };
 export function PillarsMarquee({ pillars }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
 
-  // Refs for the animation loop & interaction state
+  // Animation loop refs
   const rafRef = useRef<number | null>(null);
   const lastTRef = useRef<number | null>(null);
   const scrollPosRef = useRef(0);
@@ -23,14 +23,21 @@ export function PillarsMarquee({ pillars }: Props) {
   const dragStartXRef = useRef(0);
   const dragScrollStartRef = useRef(0);
 
+  // Velocity / momentum
+  const velocityRef = useRef(0);
+  const lastDragXRef = useRef(0);
+  const lastDragTRef = useRef(0);
+
   // Resume timer
   const resumeTimerRef = useRef<number | null>(null);
   const isPausedRef = useRef(false);
 
   const items = [...pillars, ...pillars];
-  const speed = 40; // px/sec
+  const autoSpeed = 40; // px/sec
+  const friction = 0.95; // momentum decay per frame
+  const minVelocity = 0.3; // stop momentum below this
 
-  // ── Auto-scroll loop ──
+  // ── Main animation loop ──
   useEffect(() => {
     const track = trackRef.current;
     if (!track) return;
@@ -40,12 +47,24 @@ export function PillarsMarquee({ pillars }: Props) {
       const dt = (t - lastTRef.current) / 1000;
       lastTRef.current = t;
 
-      if (!isPausedRef.current && !isDraggingRef.current) {
-        const half = track.scrollWidth / 2;
-        scrollPosRef.current += speed * dt;
-        if (scrollPosRef.current >= half) {
-          scrollPosRef.current -= half;
-        }
+      const half = track.scrollWidth / 2;
+
+      if (isDraggingRef.current) {
+        // While dragging, position is set by the pointer handler — just sync
+        scrollPosRef.current = track.scrollLeft;
+      } else if (Math.abs(velocityRef.current) > minVelocity) {
+        // Momentum phase: decelerate after drag release
+        velocityRef.current *= friction;
+        scrollPosRef.current += velocityRef.current;
+        // Wrap around
+        if (scrollPosRef.current >= half) scrollPosRef.current -= half;
+        if (scrollPosRef.current < 0) scrollPosRef.current += half;
+        track.scrollLeft = scrollPosRef.current;
+      } else if (!isPausedRef.current) {
+        // Auto-scroll phase
+        velocityRef.current = 0;
+        scrollPosRef.current += autoSpeed * dt;
+        if (scrollPosRef.current >= half) scrollPosRef.current -= half;
         track.scrollLeft = scrollPosRef.current;
       }
 
@@ -60,31 +79,31 @@ export function PillarsMarquee({ pillars }: Props) {
     };
   }, []);
 
-  // ── Schedules auto-scroll resume after delay ──
+  // ── Schedule auto-scroll resume ──
   const scheduleResume = useCallback(() => {
     if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
     resumeTimerRef.current = window.setTimeout(() => {
       isPausedRef.current = false;
-      // Sync position so it doesn't jump
       if (trackRef.current) {
         scrollPosRef.current = trackRef.current.scrollLeft;
       }
-    }, 1500);
+    }, 2000);
   }, []);
 
-  // ── Pointer / Touch handlers for drag ──
+  // ── Pointer handlers ──
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     const track = trackRef.current;
     if (!track) return;
 
     isDraggingRef.current = true;
     isPausedRef.current = true;
+    velocityRef.current = 0;
     dragStartXRef.current = e.clientX;
     dragScrollStartRef.current = track.scrollLeft;
+    lastDragXRef.current = e.clientX;
+    lastDragTRef.current = performance.now();
 
     if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
-
-    // Capture pointer so moves outside the element still fire
     track.setPointerCapture(e.pointerId);
   }, []);
 
@@ -93,10 +112,21 @@ export function PillarsMarquee({ pillars }: Props) {
     const track = trackRef.current;
     if (!track) return;
 
+    const now = performance.now();
+    const dtMs = now - lastDragTRef.current;
+
     const dx = e.clientX - dragStartXRef.current;
     const newScroll = dragScrollStartRef.current - dx;
     track.scrollLeft = newScroll;
     scrollPosRef.current = newScroll;
+
+    // Track instantaneous velocity for momentum
+    if (dtMs > 0) {
+      const moveDelta = lastDragXRef.current - e.clientX; // positive = scrolling right
+      velocityRef.current = (moveDelta / dtMs) * 16; // px per frame (~16ms)
+    }
+    lastDragXRef.current = e.clientX;
+    lastDragTRef.current = now;
   }, []);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
@@ -108,6 +138,10 @@ export function PillarsMarquee({ pillars }: Props) {
       track.releasePointerCapture(e.pointerId);
       scrollPosRef.current = track.scrollLeft;
     }
+
+    // Clamp velocity to prevent wild flings
+    const maxVel = 30;
+    velocityRef.current = Math.max(-maxVel, Math.min(maxVel, velocityRef.current));
 
     scheduleResume();
   }, [scheduleResume]);
@@ -162,7 +196,7 @@ export function PillarsMarquee({ pillars }: Props) {
         })}
       </div>
       <p className="mt-4 text-center text-xs text-muted-foreground">
-        Drag to explore · auto-scrolls when idle
+        Swipe to explore · auto-scrolls when idle
       </p>
     </div>
   );

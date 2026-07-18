@@ -27,12 +27,12 @@ export function Header() {
       }`}
     >
       <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-5">
-        <div className="flex min-h-12 sm:min-h-14 items-center justify-between gap-2 rounded-2xl glass-card px-3 py-1 sm:py-2 shadow-[0_10px_26px_-18px_rgba(15,15,25,0.28)] sm:gap-3 sm:px-4">
+        <div className="flex items-center justify-between gap-2 rounded-2xl glass-card px-3 py-0.5 shadow-[0_10px_26px_-18px_rgba(15,15,25,0.28)] sm:gap-3 sm:px-4">
           <Link to="/" className="group flex min-w-0 flex-1 items-center sm:flex-none">
             <img
               src={logoUrl}
               alt="Newton English Medium School logo"
-              className="h-9 w-auto max-w-[140px] shrink object-contain drop-shadow-sm transition-transform group-hover:scale-105 sm:h-11 sm:max-w-[170px] lg:h-13 lg:max-w-[210px]"
+              className="h-12 w-auto max-w-[180px] shrink object-contain drop-shadow-sm transition-transform group-hover:scale-105 sm:h-14 sm:max-w-[220px] lg:h-16 lg:max-w-[260px]"
             />
           </Link>
 
@@ -105,6 +105,7 @@ export function Header() {
                   <Link
                     key={item.to}
                     to={item.to}
+                    onClick={() => setOpen(false)}
                     className="px-4 py-3 rounded-xl text-sm font-medium hover:bg-primary/10"
                   >
                     {item.label}
@@ -112,6 +113,8 @@ export function Header() {
                 ))}
                 <Link
                   to="/contact"
+                  search={{ enroll: true }}
+                  onClick={() => setOpen(false)}
                   className="mt-2 inline-flex justify-center items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground"
                 >
                   Enroll Now at {SCHOOL.shortName}
