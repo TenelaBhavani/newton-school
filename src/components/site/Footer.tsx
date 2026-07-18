@@ -18,7 +18,7 @@ export function Footer() {
         <div className="grid gap-8 sm:gap-12 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
           <div>
             <div className="flex items-center gap-3">
-              <img src={logoUrl} alt="Newton EM School" className="h-14 w-auto bg-white/95 rounded-xl p-1.5" />
+              <img src={logoUrl} alt="Newton EM School" className="h-20 w-auto object-contain drop-shadow-md" />
             </div>
             <p className="mt-6 text-sm leading-relaxed text-ivory/70 max-w-sm">
               Since {SCHOOL.established}, nurturing curious minds with discipline,
