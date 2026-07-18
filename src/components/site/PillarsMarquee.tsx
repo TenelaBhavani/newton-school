@@ -18,12 +18,12 @@ export function PillarsMarquee({ pillars }: Props) {
   const lastTRef = useRef<number | null>(null);
   const scrollPosRef = useRef(0);
 
-  // Drag state
+  // Drag state (Desktop only)
   const isDraggingRef = useRef(false);
   const dragStartXRef = useRef(0);
   const dragScrollStartRef = useRef(0);
 
-  // Velocity / momentum (for mouse drag only)
+  // Velocity / momentum (Desktop only)
   const velocityRef = useRef(0);
   const lastDragXRef = useRef(0);
   const lastDragTRef = useRef(0);
@@ -50,7 +50,6 @@ export function PillarsMarquee({ pillars }: Props) {
       const half = track.scrollWidth / 2;
 
       if (isDraggingRef.current) {
-        // While dragging, position is set by the pointer handler — just sync
         scrollPosRef.current = track.scrollLeft;
       } else if (Math.abs(velocityRef.current) > minVelocity) {
         // Momentum phase: decelerate after drag release
@@ -90,69 +89,69 @@ export function PillarsMarquee({ pillars }: Props) {
     }, 2000);
   }, []);
 
-  // ── Pointer handlers ──
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+  // ── Mouse events for desktop dragging ──
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
     const track = trackRef.current;
     if (!track) return;
 
+    isDraggingRef.current = true;
     isPausedRef.current = true;
-    if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
+    velocityRef.current = 0;
+    dragStartXRef.current = e.clientX;
+    dragScrollStartRef.current = track.scrollLeft;
+    lastDragXRef.current = e.clientX;
+    lastDragTRef.current = performance.now();
 
-    if (e.pointerType === "mouse") {
-      isDraggingRef.current = true;
-      velocityRef.current = 0;
-      dragStartXRef.current = e.clientX;
-      dragScrollStartRef.current = track.scrollLeft;
-      lastDragXRef.current = e.clientX;
-      lastDragTRef.current = performance.now();
-      track.setPointerCapture(e.pointerId);
-    }
+    if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
   }, []);
 
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isDraggingRef.current) return;
     const track = trackRef.current;
     if (!track) return;
 
-    if (e.pointerType === "mouse") {
-      const now = performance.now();
-      const dtMs = now - lastDragTRef.current;
+    const now = performance.now();
+    const dtMs = now - lastDragTRef.current;
 
-      const dx = e.clientX - dragStartXRef.current;
-      const newScroll = dragScrollStartRef.current - dx;
-      track.scrollLeft = newScroll;
-      scrollPosRef.current = newScroll;
+    const dx = e.clientX - dragStartXRef.current;
+    const newScroll = dragScrollStartRef.current - dx;
+    track.scrollLeft = newScroll;
+    scrollPosRef.current = newScroll;
 
-      // Track instantaneous velocity for momentum
-      if (dtMs > 0) {
-        const moveDelta = lastDragXRef.current - e.clientX; // positive = scrolling right
-        velocityRef.current = (moveDelta / dtMs) * 16; // px per frame (~16ms)
-      }
-      lastDragXRef.current = e.clientX;
-      lastDragTRef.current = now;
+    if (dtMs > 0) {
+      const moveDelta = lastDragXRef.current - e.clientX;
+      velocityRef.current = (moveDelta / dtMs) * 16;
     }
+    lastDragXRef.current = e.clientX;
+    lastDragTRef.current = now;
   }, []);
 
-  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+  const handleMouseUpOrLeave = useCallback(() => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+
     const track = trackRef.current;
-    if (e.pointerType === "mouse") {
-      if (!isDraggingRef.current) return;
-      isDraggingRef.current = false;
-
-      if (track) {
-        track.releasePointerCapture(e.pointerId);
-        scrollPosRef.current = track.scrollLeft;
-      }
-
-      // Clamp velocity to prevent wild flings
-      const maxVel = 30;
-      velocityRef.current = Math.max(-maxVel, Math.min(maxVel, velocityRef.current));
-    } else {
-      if (track) {
-        scrollPosRef.current = track.scrollLeft;
-      }
+    if (track) {
+      scrollPosRef.current = track.scrollLeft;
     }
 
+    const maxVel = 30;
+    velocityRef.current = Math.max(-maxVel, Math.min(maxVel, velocityRef.current));
+
+    scheduleResume();
+  }, [scheduleResume]);
+
+  // ── Touch events for mobile native scrolling ──
+  const handleTouchStart = useCallback(() => {
+    isPausedRef.current = true;
+    if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    const track = trackRef.current;
+    if (track) {
+      scrollPosRef.current = track.scrollLeft;
+    }
     scheduleResume();
   }, [scheduleResume]);
 
@@ -176,10 +175,13 @@ export function PillarsMarquee({ pillars }: Props) {
     >
       <div
         ref={trackRef}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUpOrLeave}
+        onMouseLeave={handleMouseUpOrLeave}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
         onScroll={handleScroll}
         className="flex gap-6 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden select-none cursor-grab active:cursor-grabbing"
         style={{ width: "100%" }}
