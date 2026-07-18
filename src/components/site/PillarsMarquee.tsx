@@ -23,7 +23,7 @@ export function PillarsMarquee({ pillars }: Props) {
   const dragStartXRef = useRef(0);
   const dragScrollStartRef = useRef(0);
 
-  // Velocity / momentum
+  // Velocity / momentum (for mouse drag only)
   const velocityRef = useRef(0);
   const lastDragXRef = useRef(0);
   const lastDragTRef = useRef(0);
@@ -95,16 +95,18 @@ export function PillarsMarquee({ pillars }: Props) {
     const track = trackRef.current;
     if (!track) return;
 
-    isDraggingRef.current = true;
     isPausedRef.current = true;
-    velocityRef.current = 0;
-    dragStartXRef.current = e.clientX;
-    dragScrollStartRef.current = track.scrollLeft;
-    lastDragXRef.current = e.clientX;
-    lastDragTRef.current = performance.now();
-
     if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
-    track.setPointerCapture(e.pointerId);
+
+    if (e.pointerType === "mouse") {
+      isDraggingRef.current = true;
+      velocityRef.current = 0;
+      dragStartXRef.current = e.clientX;
+      dragScrollStartRef.current = track.scrollLeft;
+      lastDragXRef.current = e.clientX;
+      lastDragTRef.current = performance.now();
+      track.setPointerCapture(e.pointerId);
+    }
   }, []);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
@@ -112,39 +114,55 @@ export function PillarsMarquee({ pillars }: Props) {
     const track = trackRef.current;
     if (!track) return;
 
-    const now = performance.now();
-    const dtMs = now - lastDragTRef.current;
+    if (e.pointerType === "mouse") {
+      const now = performance.now();
+      const dtMs = now - lastDragTRef.current;
 
-    const dx = e.clientX - dragStartXRef.current;
-    const newScroll = dragScrollStartRef.current - dx;
-    track.scrollLeft = newScroll;
-    scrollPosRef.current = newScroll;
+      const dx = e.clientX - dragStartXRef.current;
+      const newScroll = dragScrollStartRef.current - dx;
+      track.scrollLeft = newScroll;
+      scrollPosRef.current = newScroll;
 
-    // Track instantaneous velocity for momentum
-    if (dtMs > 0) {
-      const moveDelta = lastDragXRef.current - e.clientX; // positive = scrolling right
-      velocityRef.current = (moveDelta / dtMs) * 16; // px per frame (~16ms)
+      // Track instantaneous velocity for momentum
+      if (dtMs > 0) {
+        const moveDelta = lastDragXRef.current - e.clientX; // positive = scrolling right
+        velocityRef.current = (moveDelta / dtMs) * 16; // px per frame (~16ms)
+      }
+      lastDragXRef.current = e.clientX;
+      lastDragTRef.current = now;
     }
-    lastDragXRef.current = e.clientX;
-    lastDragTRef.current = now;
   }, []);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
-    if (!isDraggingRef.current) return;
-    isDraggingRef.current = false;
-
     const track = trackRef.current;
-    if (track) {
-      track.releasePointerCapture(e.pointerId);
-      scrollPosRef.current = track.scrollLeft;
-    }
+    if (e.pointerType === "mouse") {
+      if (!isDraggingRef.current) return;
+      isDraggingRef.current = false;
 
-    // Clamp velocity to prevent wild flings
-    const maxVel = 30;
-    velocityRef.current = Math.max(-maxVel, Math.min(maxVel, velocityRef.current));
+      if (track) {
+        track.releasePointerCapture(e.pointerId);
+        scrollPosRef.current = track.scrollLeft;
+      }
+
+      // Clamp velocity to prevent wild flings
+      const maxVel = 30;
+      velocityRef.current = Math.max(-maxVel, Math.min(maxVel, velocityRef.current));
+    } else {
+      if (track) {
+        scrollPosRef.current = track.scrollLeft;
+      }
+    }
 
     scheduleResume();
   }, [scheduleResume]);
+
+  const handleScroll = useCallback(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    if (isPausedRef.current) {
+      scrollPosRef.current = track.scrollLeft;
+    }
+  }, []);
 
   return (
     <div
@@ -162,7 +180,8 @@ export function PillarsMarquee({ pillars }: Props) {
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
-        className="flex gap-6 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden select-none cursor-grab active:cursor-grabbing touch-none"
+        onScroll={handleScroll}
+        className="flex gap-6 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden select-none cursor-grab active:cursor-grabbing touch-pan-y"
         style={{ width: "100%" }}
       >
         {items.map((p, i) => {
