@@ -88,7 +88,7 @@ Thank you.`;
   return (
     <SiteShell>
       <HeroBackground images={[classroom, studentLife, cultural, lab]} minHeight="min-h-[52vh]">
-        <div className="container-page relative z-10 flex min-h-[52vh] flex-col justify-center py-12 text-ivory">
+        <div className="container-page relative z-10 flex min-h-[52vh] flex-col justify-center pt-28 pb-12 text-ivory sm:pt-36">
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">
             Contact & Admissions
           </p>

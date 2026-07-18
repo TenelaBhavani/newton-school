@@ -92,7 +92,7 @@ function GalleryPage() {
   return (
     <SiteShell>
       <HeroBackground images={[hero, studentLife, cultural, sports, lab, independence]} minHeight="min-h-[55vh]">
-        <div className="container-page relative z-10 flex min-h-[55vh] flex-col justify-center py-12 text-ivory">
+        <div className="container-page relative z-10 flex min-h-[55vh] flex-col justify-center pt-28 pb-12 text-ivory sm:pt-36">
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">
             Gallery
           </p>

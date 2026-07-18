@@ -55,7 +55,7 @@ function EventsPage() {
   return (
     <SiteShell>
       <HeroBackground images={[cultural, sports, independence, lab, studentLife]} minHeight="min-h-[55vh]">
-        <div className="container-page relative z-10 flex min-h-[55vh] flex-col justify-center py-12 text-ivory">
+        <div className="container-page relative z-10 flex min-h-[55vh] flex-col justify-center pt-28 pb-12 text-ivory sm:pt-36">
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Events</p>
           <h1 className="mt-3 font-display text-4xl sm:text-6xl lg:text-7xl max-w-3xl leading-tight">
             What's <span className="text-gradient-gold">happening</span> at Newton.

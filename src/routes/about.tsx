@@ -77,7 +77,7 @@ function AboutPage() {
   return (
     <SiteShell>
       <HeroBackground images={[classroom, studentLife, cultural, computerLab, sports]} minHeight="min-h-[56vh] sm:min-h-[62vh]">
-        <div className="container-page relative z-10 flex min-h-[56vh] flex-col justify-center py-10 text-ivory sm:min-h-[62vh] sm:py-16">
+        <div className="container-page relative z-10 flex min-h-[56vh] flex-col justify-center pt-28 pb-10 text-ivory sm:min-h-[62vh] sm:pt-36 sm:pb-16">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold sm:tracking-[0.25em]">
             About Newton
           </p>

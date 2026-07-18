@@ -82,14 +82,13 @@ function HomePage() {
     <SiteShell>
       {/* ============ HERO ============ */}
       <HeroBackground images={heroSlides} minHeight="min-h-[88vh]">
-        <div className="container-page relative z-10 flex min-h-[88vh] flex-col items-center justify-center pt-12 pb-16 text-center text-ivory">
+        <div className="container-page relative z-10 flex min-h-[88vh] flex-col items-center justify-center pt-32 sm:pt-40 pb-16 text-center text-ivory">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 rounded-full border border-ivory/30 bg-white/10 px-4 py-1.5 text-xs font-medium text-ivory backdrop-blur"
+            className="inline-flex rounded-full border border-ivory/30 bg-white/10 px-4 py-1.5 text-xs font-medium text-ivory backdrop-blur"
           >
-            <Sparkles className="h-3.5 w-3.5" />
             Admissions open · Academic Year 2026–27
           </motion.div>
 
